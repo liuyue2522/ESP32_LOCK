@@ -3,6 +3,7 @@
 
 #include "driver/gpio.h"
 #include "esp_task.h"
+#include "COM_DEBUG.h"
 
 #define BDR_A GPIO_NUM_4
 #define BDR_B GPIO_NUM_5

@@ -27,6 +27,8 @@ void Int_BDR6120_Init(void)
 
     // 待机处于待命状态:BDR6120驱动芯片与电机断开状态
     Int_BDR6120_Standby();
+
+    MY_LOGI("BDR6120初始化完成");
 }
 
 // 开锁方法
@@ -34,17 +36,21 @@ void Int_BDR6120_Open(void)
 {
     //1.电机前进
     Int_BDR6120_Forward();
-    vTaskDelay(1000);
+    MY_LOGI("电机前进");
+    vTaskDelay(100);
 
     //2.让用户进入,等以后再把门锁上
     Int_BDR6120_Brake();
+    MY_LOGI("电机刹车");
     vTaskDelay(3000);
 
     //3.电机后退
     Int_BDR6120_Backward();
-    vTaskDelay(1000);
+    MY_LOGI("电机后退");
+    vTaskDelay(100);
 
     //4.电机刹车
+    MY_LOGI("电机刹车");
     Int_BDR6120_Brake();
 }
 
