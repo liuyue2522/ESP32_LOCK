@@ -63,3 +63,7 @@ sdkconfig.old
 *.bin
 *.map
 dependencies.lock
+
+# Ignore TEST folder
+TEST/
+test/

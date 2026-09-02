@@ -37,17 +37,17 @@ void Int_BDR6120_Open(void)
     //1.电机前进
     Int_BDR6120_Forward();
     MY_LOGI("电机前进");
-    vTaskDelay(100);
+    vTaskDelay(100 / portTICK_PERIOD_MS);
 
     //2.让用户进入,等以后再把门锁上
     Int_BDR6120_Brake();
     MY_LOGI("电机刹车");
-    vTaskDelay(3000);
+    vTaskDelay(3000 / portTICK_PERIOD_MS);
 
     //3.电机后退
     Int_BDR6120_Backward();
     MY_LOGI("电机后退");
-    vTaskDelay(100);
+    vTaskDelay(100 / portTICK_PERIOD_MS);
 
     //4.电机刹车
     MY_LOGI("电机刹车");

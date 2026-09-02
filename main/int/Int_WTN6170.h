@@ -4,6 +4,7 @@
 #include "driver/gpio.h"
 #include "esp_task.h"
 #include "sys/unistd.h"
+#include "Com_Debug.h"
 
 #define WTN_DATA GPIO_NUM_9
 #define WTN_DATA_H (gpio_set_level(WTN_DATA, 1)) // 拉高数据线

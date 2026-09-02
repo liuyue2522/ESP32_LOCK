@@ -20,6 +20,8 @@ void Int_WTN6170_Init(void)
 
     // P9拉高，WTN6170模块进入空闲状态
     WTN_DATA_H;
+
+    MY_LOGI("WTN6170初始化完成");
 }
 
 // 2.MCU给WTN6170发送数据

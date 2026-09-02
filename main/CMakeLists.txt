@@ -4,6 +4,7 @@ idf_component_register(
         "./com/Com_Debug.c"
         "./int/Int_BDR6120.c"
         "./int/Int_WTN6170.c"
+        "./int/Int_SC12B.c"
     INCLUDE_DIRS
     "."
     "./com"
