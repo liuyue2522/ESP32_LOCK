@@ -9,14 +9,18 @@
 #define WTN_DATA_H (gpio_set_level(WTN_DATA, 1)) // 拉高数据线
 #define WTN_DATA_L (gpio_set_level(WTN_DATA, 0)) // 拉低数据线
 
+// 命令宏定义
 #define sayWithoutInt() Int_WTN6170_SendData(0xf3) // 连码播放
+#define setVolume(x) Int_WTN6170_SendData(0xE0 + x) // 设置音量
 
+
+// 语音播报宏定义
 #define sayNum(x) Int_WTN6170_SendData(x + 1) // 播放数字
 #define sayWaterDrop() Int_WTN6170_SendData(11) // 播放水滴
 #define sayBuzzer() Int_WTN6170_SendData(12) // 播放蜂鸣器
 #define sayAlarm() Int_WTN6170_SendData(13) // 播放警报
 #define sayDoorBell() Int_WTN6170_SendData(14) // 播放门铃
-#define sayFail() Int_WTN6170_SendData(16) // 播放失败
+#define sayFail() Int_WTN6170_SendData(16) // 失败音效
 #define sayPassword() Int_WTN6170_SendData(19) // 播放密码
 #define sayDoorOpen() Int_WTN6170_SendData(25) // 播放开门
 #define sayDoorClose() Int_WTN6170_SendData(26) // 播放关门
