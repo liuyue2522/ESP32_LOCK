@@ -47,7 +47,7 @@ void app_main(void)
          MY_LOGI("按键编号: %d", key_num);
 
          Int_WS2812_LEDOff(); // 清空灯带
-         Int_WS2812_LEDOn(key_num, purple); // 点亮对应编号的灯
+         Int_WS2812_LEDOn(key_num, violet); // 点亮对应编号的灯
          my_time = 0; // 重置超时计数
          led_state = true; // 亮灯
       }

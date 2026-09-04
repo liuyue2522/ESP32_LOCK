@@ -24,6 +24,7 @@ extern uint8_t green[3];
 extern uint8_t blue[3];
 extern uint8_t cyan[3];
 extern uint8_t purple[3];
+extern uint8_t violet[3];
 
 // 1.WS2812初始化方法
 void Int_WS2812_Init(void);
