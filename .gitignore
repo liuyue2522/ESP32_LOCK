@@ -67,3 +67,10 @@ dependencies.lock
 # Ignore TEST folder
 TEST/
 test/
+
+
+# Ignore managed_components folder
+managed_components/
+
+# Ignore esp-idf folder
+esp-idf/
