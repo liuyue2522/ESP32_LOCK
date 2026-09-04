@@ -22,7 +22,7 @@ void Int_WS2812_Init(void)
         .strip_gpio_num = LED_STRIP_GPIO_PIN, // IO引脚编号
         .max_leds = LED_STRIP_LED_COUNT, // 灯带LED数量
         .led_model = LED_MODEL_WS2812, // 芯片型号
-        .color_component_format = LED_STRIP_COLOR_COMPONENT_FMT_GRB, // 颜色格式->GRB
+        .color_component_format = LED_STRIP_COLOR_COMPONENT_FMT_GRB, // 颜色格式->GRB， WS2812使用GRB格式，底层API会自动将数组的RGB转换为GRB
         .flags = {
             .invert_out = false, // 信号是否反转
         }
