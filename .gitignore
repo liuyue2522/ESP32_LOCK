@@ -65,7 +65,7 @@ sdkconfig.old
 dependencies.lock
 
 # Ignore TEST folder
-TEST/
-test/
+# TEST/
+# test/
 
 
