@@ -5,6 +5,7 @@ idf_component_register(
         "./int/Int_BDR6120.c"
         "./int/Int_WTN6170.c"
         "./int/Int_SC12B.c"
+        "./int/Int_WS2812.c"
     INCLUDE_DIRS
     "."
     "./com"
