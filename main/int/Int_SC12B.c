@@ -37,7 +37,7 @@ void Int_SC12B_Init(void)
     i2c_driver_install(I2C_NUM_0, conf.mode, I2C_MASTER_RX_BUF_DISABLE, I2C_MASTER_TX_BUF_DISABLE, 0);
 
 
-    // 2.P0引脚添加外部中断,检测到上升沿出发外部中断
+    // 2.P0引脚添加外部中断,检测到上升沿触发外部中断
     gpio_config_t io_conf = {
         .intr_type = GPIO_INTR_POSEDGE, // 上升沿触发中断
         .mode = GPIO_MODE_INPUT,        // 输入模式

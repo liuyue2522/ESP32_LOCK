@@ -28,6 +28,9 @@
 void App_Main_Init(void);
 
 // 2.处理获取用户输入内容
-Status_T App_Main_GetUserInput(char buffer[]);
+STATE_T App_Main_GetUserInput(char buffer[]);
+
+//3.处理获取到用户内容:命令+密码
+void App_Main_Handler(char * user_inputData);
 
 #endif /* __APP_MAIN_H__ */

@@ -3,12 +3,12 @@
 
 typedef enum
 {
-    Status_OK, // 成功
-    Status_FAIL, // 失败
-    Status_ERROR, // 错误
-    Status_TIMEOUT, // 超时
-    Status_OTHER, // 其他
-} Status_T;
+    STATE_OK, // 成功
+    STATE_FAIL, // 失败
+    STATE_ERROR, // 错误
+    STATE_TIMEOUT, // 超时
+    STATE_OTHER, // 其他
+} STATE_T;
 
 
 #endif /* __COM_CONFIG_H__ */

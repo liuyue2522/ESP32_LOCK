@@ -34,31 +34,31 @@ void Dri_NVS_Init(void)
 }
 
 // 写入字符串
-esp_err_t Dri_NVS_SetStr(char *key, char *val)
+esp_err_t Dri_NVS_SetValueByKey(char *key, char *val)
 {
     return nvs_set_str(my_handler, key, val);
 }
 
 // 读取字符串
-esp_err_t Dri_NVS_GetStr(char *key, char *val, size_t *len)
+esp_err_t Dri_NVS_GetValueByKey(char *key, char *val, size_t *len)
 {
     return nvs_get_str(my_handler, key, val, len);
 }
 
 // 写入数字
-esp_err_t Dri_NVS_SetU8(char *key, uint8_t val)
+esp_err_t Dri_NVS_SetKey(char *key, uint8_t val)
 {
     return nvs_set_u8(my_handler, key, val);
 }
 
 // 读取数字
-esp_err_t Dri_NVS_GetU8(char *key, uint8_t *val)
+esp_err_t Dri_NVS_GetKey(char *key, uint8_t *val)
 {
     return nvs_get_u8(my_handler, key, val);
 }
 
 // 删除信息
-esp_err_t Dri_NVS_DeleteU8(char *key)
+esp_err_t Dri_NVS_DeleteKey(char *key)
 {
     return nvs_erase_key(my_handler, key);
 }
@@ -69,7 +69,7 @@ esp_err_t Dri_NVS_DeleteAll(void)
 }
 
 // 判断普通用户密码是否存在
-esp_err_t Dri_NVS_FindPWD(char *key)
+esp_err_t Dri_NVS_FindKey(char *key)
 {
     return nvs_find_key(my_handler, key, NULL);
 }

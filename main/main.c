@@ -23,26 +23,22 @@ void task_CallBack(void *pvParameters)
     while (1)
     {
         // 获取用户输入内容
-        Status_T result = App_Main_GetUserInput(buffers);
+        STATE_T result = App_Main_GetUserInput(buffers);
         switch (result)
         {
             // 按下M键,非法操作
-        case Status_ERROR:
+        case STATE_ERROR:
             MY_LOGE("按下M");
             break;
             // 按下#
-        case Status_OK:
+        case STATE_OK:
             MY_LOGE("按下#,收集到内容:%s", buffers);
-            if (strcmp(buffers, "123456") == 0)
-            {
-               MY_LOGE("密码正确");
-               Int_BDR6120_Open();
-            }
+            App_Main_Handler(buffers);
             break;
 
-        case Status_TIMEOUT:
-            MY_LOGE("超时");
-            Int_WS2812_LEDOff();
+        case STATE_TIMEOUT:
+            // MY_LOGE("超时");
+            // Int_WS2812_LEDOff();
             break;
 
         default:
