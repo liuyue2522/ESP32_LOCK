@@ -3,6 +3,15 @@
 // 接收缓冲区
 uint8_t rx_buffers[RX_BUF_SIZE];
 
+// 标记:判断用户手指是否放到FPM383上面
+uint8_t fpm383_flag = 0;
+
+// p10外部中断服务程序
+void Int_FPM383_CallBack(void *arg)
+{
+    // 检测到手指放到FPM383上面,标志位置1
+    fpm383_flag = 1;
+}
 
 /********************************工具函数声明*************************************************** */
 // 计算校验和
@@ -51,11 +60,35 @@ void Int_FPM383_Init(void)
     gpio_config(&io_config);
     // FPM383_EN拉低电平，PMOS管导通，接入3V3电源开始供电
     gpio_set_level(FPM383_EN, 0);
-    // 3.添加延迟
+
+
+    // 3.初始化P10引脚,添加外部中断!检测上升沿
+    gpio_config_t io_config2 = {
+        .intr_type = GPIO_INTR_POSEDGE,       // 上升沿触发
+        .mode = GPIO_MODE_INPUT,              // 输入模式
+        .pull_up_en = 0,                      // 不使用上拉
+        .pull_down_en = 1,                    // 使用下拉
+        .pin_bit_mask = (1ULL << FPM383_OUT), // 设置引脚
+    };
+    gpio_config(&io_config2);
+    // 设置外部中断优先级
+    gpio_install_isr_service(0);
+    // 添加中断服务程序
+    gpio_isr_handler_add(FPM383_OUT, Int_FPM383_CallBack, (void *)FPM383_OUT);
+    // 关闭P10外部中断
+    gpio_intr_disable(FPM383_OUT);
+
+
+    // 4.添加延迟
     /* 复位启动时间为100ms左右，建议延时150ms */
     vTaskDelay(150);
-    // 4.进入休眠状态
+
+
+    // 5.进入休眠状态
     Int_FPM383_Sleep();
+
+
+    MY_LOGI("FPM383初始化完成");
 }
 
 /********************************发送各种命令函数封装*************************************************** */
@@ -83,10 +116,9 @@ void Int_FPM383_SerialNumber(void)
     // 4.解析接收到应答数据-确认码0x00
     if (rx_buffers[9] == 0x00) // 确认码=00H 表示 OK；确认码=01H 表示收包有错；
     {
-
         for (uint8_t i = 0; i < 64; i++)
         {
-            printf("%02X ", rx_buffers[i]);
+            printf("%#02X ", rx_buffers[i]);
         }
         printf("\r\n");
     }
@@ -112,9 +144,12 @@ void Int_FPM383_Sleep(void)
         Int_FPM383_SendCMD(cmd, sizeof(cmd));
         // 接收应答数据
         Int_FPM383_RecvData(12, 2000);
+        vTaskDelay(100 / portTICK_PERIOD_MS);
     } while (rx_buffers[9] != 0x00);
     // 进入休眠状态
     MY_LOGE("进入休眠状态");
+    //开启外部中断
+    gpio_intr_enable(FPM383_OUT);
 }
 
 // 4.获取指纹库中还未注册ID的最小值：    读索引表PS_ReadIndexTable
@@ -169,7 +204,7 @@ uint8_t Int_FPM383_GetMinID(void)
         }
     }
     // 如果100枚指纹【0-99】,都注册了,返回非0-99数字即可！
-    // return 0xFF;
+    return 0xFF;
 }
 
 // 5.添加（自动注册模板）门锁用户指纹功能
@@ -192,6 +227,12 @@ STATE_T Int_FPM383_AddUserFingerprint(uint8_t id)
 
     // 2. 计算校验和
     Int_FPM383_CheckSum(cmd, sizeof(cmd)); // 包长度 + 指令码 + 参数 + ID号
+
+    // 每次注册前先取消注册四次
+    Int_FPM383_Cancel();
+    Int_FPM383_Cancel();
+    Int_FPM383_Cancel();
+    Int_FPM383_Cancel();
 
     // 3.发送注册指纹命令
     Int_FPM383_SendCMD(cmd, sizeof(cmd));
@@ -237,6 +278,103 @@ void Int_FPM383_Cancel(void)
     MY_LOGE("取消注册指纹模版成功");
 }
 
+// 7.自动验证指纹（开门和删除时都需要）：如果验证成功，返回用户ID
+STATE_T Int_FPM383_VerifyFingerprint(uint8_t *id)
+{
+    uint8_t cmd[17] = {
+        0xEF, 0x01,             // 包头
+        0xFF, 0xFF, 0xFF, 0xFF, // 设备地址
+        0x01,                   // 包标识
+        0x00, 0x08,             // 包长度
+        0x32,                   // 指令码
+        0x03,                   // 分数等级
+        0xFF, 0xFF,             // ID号:0xFFFF,当前指纹与指纹库进行对比。 或者例如：0x0011,跟第17指纹进行对比
+        0x00, 0x07,             // 参数:表示只需要最后验证结果!!!!
+        '\0', '\0'              // 校验和
+    };
+
+    // 计算校验和
+    Int_FPM383_CheckSum(cmd, sizeof(cmd));
+
+    // 发送验证指纹命令
+    Int_FPM383_SendCMD(cmd, sizeof(cmd));
+
+    // 接收应答数据
+    Int_FPM383_RecvData(17, 2000);
+
+    // 判断确认码
+    if (rx_buffers[9] == 0x00)
+    {
+        if (id != NULL)
+        {
+            // 指纹ID:两个字节,0-99,高八位没用!
+            *id = rx_buffers[12];
+        }
+        return STATE_OK;
+    }
+
+    return STATE_FAIL;
+}
+
+// 8.删除用户某一个指纹
+STATE_T Int_FPM383_DeleteUserFingerprint(uint8_t id)
+{
+    // 发送删除某一个指纹命令
+    uint8_t cmd[16] = {
+        0xEF, 0x01,             // 包头
+        0xFF, 0xFF, 0xFF, 0xFF, // 设备地址
+        0x01,                   // 包标识
+        0x00, 0x07,             // 包长度
+        0x0C,                   // 指令码
+        0x00, '\0',             // 删除指纹ID编号
+        0x00, 0x01,             // 删除指纹个数
+        '\0', '\0'              // 校验和
+    };
+    cmd[11] = id;
+
+    // 计算校验和
+    Int_FPM383_CheckSum(cmd, sizeof(cmd));
+
+    // 发送删除指纹命令
+    Int_FPM383_SendCMD(cmd, sizeof(cmd));
+
+    // 接收应答数据
+    Int_FPM383_RecvData(12, 2000);
+
+    // 判断确认码
+    if (rx_buffers[9] == 0x00)
+    {
+        return STATE_OK;
+    }
+    return STATE_FAIL;
+}
+
+// 9.清空FPM383指纹库（删除所有指纹）
+STATE_T Int_FPM383_ClearAll(void)
+{
+    // 删除指纹库
+    uint8_t cmd[12] = {
+        0xEF, 0x01,             // 包头
+        0xFF, 0xFF, 0xFF, 0xFF, // 设备地址
+        0x01,                   // 包标识
+        0x00, 0x03,             // 包长度
+        0x0D,                   // 指令码
+        0x00, 0x11              // 校验和
+    };
+
+    // 发送命令
+    Int_FPM383_SendCMD(cmd, sizeof(cmd));
+
+    // 接收应答数据
+    Int_FPM383_RecvData(12, 2000);
+
+    if (rx_buffers[9] == 0x00)
+    {
+        return STATE_OK;
+    }
+    return STATE_FAIL;
+}
+
 
 /********************************工具函数封装*************************************************** */
 // 计算校验和
@@ -270,4 +408,24 @@ static void Int_FPM383_RecvData(uint32_t len, TickType_t timeout)
     memset(rx_buffers, 0xFF, RX_BUF_SIZE);
     // 接收FPM383响应的数据
     uart_read_bytes(UART_NUM_1, rx_buffers, len, timeout);
+
+    // 判断接收到的数据是否正确
+    uint8_t verifyByte1 = 0XEF;
+    uint8_t verifyByte2 = 0X01;
+    uint8_t offset = 0; // 偏移量
+    for (uint8_t i = 0; i < len; i++)
+    {
+        if ((rx_buffers[i] == verifyByte1) && (rx_buffers[i + 1] == verifyByte2))
+        {
+            offset = i;
+            break; // 找到正确的数据,跳出循环
+        }
+    }
+    // 将数据偏移到正确的位置
+    for (uint8_t i = 0; i < len; i++)
+    {
+        rx_buffers[i] = rx_buffers[i + offset];
+        printf("%#02X ", rx_buffers[i]);
+    }
+    printf("\n");
 }

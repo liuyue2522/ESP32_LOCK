@@ -7,11 +7,13 @@ int time_out = 3000 / MY_TIME_BASE;
 // 计数器
 uint32_t my_timer = 0;
 
-#define BUFFER_SIZE 20
+
 // 收集用户输入内容缓冲区
 char first_buffers[BUFFER_SIZE];
 char second_buffers[BUFFER_SIZE];
 
+// 任务2句柄
+extern TaskHandle_t task2;
 
 /******************************************************************************************/
 
@@ -50,6 +52,8 @@ void App_Main_Init(void)
     Int_WS2812_Init();
     // 5.NVS分区持久化存储用户数据
     Dri_NVS_Init();
+    // 6.指纹模块
+    Int_FPM383_Init();
 }
 
 // 2.获取用户输入
@@ -119,7 +123,7 @@ STATE_T App_Main_GetUserInput(char buffer[])
     }
 }
 
-// 处理用户输入内容:命令(2)、密码(6)
+// 3.处理用户输入内容:命令(2)、密码(6)
 void App_Main_Handler(char * user_inputData)
 {
     // 1.获取用户输入内容长度
@@ -135,25 +139,55 @@ void App_Main_Handler(char * user_inputData)
     else if (len == 2)
     {
         // 处理命令:添加管理员、删除管理员、添加普通用户密码、删除用户密码、指纹........
-        if (user_inputData[0] == '0' && user_inputData[1] == '0')
+        if (user_inputData[0] == '0' && user_inputData[1] == '0') // 添加管理员
         {
-            // 添加管理员
             App_Main_AddAdmin();
         }
-        else if (user_inputData[0] == '0' && user_inputData[1] == '1')
+        else if (user_inputData[0] == '0' && user_inputData[1] == '1') // 删除管理员
         {
-            // 删除管理员
             App_Main_DelAdmin();
         }
-        else if (user_inputData[0] == '1' && user_inputData[1] == '0')
+        else if (user_inputData[0] == '1' && user_inputData[1] == '0') // 添加用户密码
         {
-            // 添加用户密码
             App_Main_AddUser();
         }
-        else if (user_inputData[0] == '1' && user_inputData[1] == '1')
+        else if (user_inputData[0] == '1' && user_inputData[1] == '1') // 删除用户密码
         {
-            // 删除用户密码
             App_Main_DelUser();
+        }
+        else if (user_inputData[0] == '2' && user_inputData[1] == '0') // 添加指纹
+        {
+            // 验证管理员身份
+            STATE_T err = App_Main_VerifyAdmin();
+            // 验证通过
+            if (err == STATE_OK)
+            {
+                // 发送通知
+                xTaskNotify(task2, 1, eSetValueWithOverwrite);  // eSetValueWithOverwrite: 直接覆盖写入新值
+                // 通知值为1，表示添加指纹
+            }
+            else
+            {
+                sayWithoutInt();
+                sayVerifyFail(); // 验证失败
+            }
+        }
+         else if (user_inputData[0] == '2' && user_inputData[1] == '1') // 删除指纹
+        {
+            // 验证管理员身份
+            STATE_T err = App_Main_VerifyAdmin();
+            // 验证通过
+            if (err == STATE_OK)
+            {
+                // 发送通知
+                xTaskNotify(task2, 2, eSetValueWithOverwrite);
+                // 通知值为2，表示删除指纹
+            }
+            else
+            {
+                sayWithoutInt();
+                sayVerifyFail(); // 验证失败
+            }
         }
         else
         {
@@ -170,6 +204,17 @@ void App_Main_Handler(char * user_inputData)
     }
 }
 
+// 4.处理用户指纹业务
+void App_Main_Handler_FingerPrint(void)
+{ 
+    uint32_t val = 0;
+
+    //接收通知
+    //收到数据:清除数据实际,收之前、之后都清！
+    xTaskNotifyWait(UINT32_MAX,UINT32_MAX,&val,0);
+    MY_LOGE("收到通知:%ld", val);
+}
+   
 /******************************************************************************************/
 
 // 清空缓冲区
@@ -339,7 +384,8 @@ static void App_Main_DelAdmin(void)
             // 删除FLASH当中管理员信息
             // err = Dri_NVS_DeleteKey("admin");
             // 删除全部数据
-            if (Dri_NVS_DeleteAll() == ESP_OK)
+            /* Dri_NVS_DeleteAll：删除flash中全部密码。   Int_FPM383_ClearAll：删除全部指纹  */
+            if ((Dri_NVS_DeleteAll() == ESP_OK) && (Int_FPM383_ClearAll() == ESP_OK))
             {
                 // 语音提示
                 sayWithoutInt();

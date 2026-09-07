@@ -18,10 +18,16 @@
 #include "Int_WS2812.h"
 // NVS驱动
 #include "Dri_NVS.h"
+// 指纹接口
+#include "Int_FPM383.h"
 
 #include "Com_Config.h"
 #include "string.h"
 #include "Com_Debug.h"
+#include "esp_task.h"
+
+
+#define BUFFER_SIZE 20
 
 
 // 1.项目初始化方法
@@ -30,7 +36,10 @@ void App_Main_Init(void);
 // 2.处理获取用户输入内容
 STATE_T App_Main_GetUserInput(char buffer[]);
 
-//3.处理获取到用户内容:命令+密码
+// 3.处理获取到用户内容:命令+密码
 void App_Main_Handler(char * user_inputData);
+
+// 4.处理用户指纹业务
+void App_Main_Handler_FingerPrint(void);
 
 #endif /* __APP_MAIN_H__ */
