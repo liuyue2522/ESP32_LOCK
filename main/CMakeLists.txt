@@ -8,6 +8,7 @@ idf_component_register(
         "./int/Int_WS2812.c"
         "./dri/dri_NVS.c"
         "./app/App_Main.c"
+        "./int/Int_FPM383.c"
     INCLUDE_DIRS
     "."
     "./com"
