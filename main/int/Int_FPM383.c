@@ -406,25 +406,16 @@ static void Int_FPM383_RecvData(uint32_t len, TickType_t timeout)
     // 加入发送多个命令,接收应答数据都是放在rx_buffers缓冲区,因为每一次在手新的应答数据之前清空数据
     // 每一次清空数据里面放置0xFF,别写0
     memset(rx_buffers, 0xFF, RX_BUF_SIZE);
+
+    // 清除硬件缓冲区（一定要做这一步，每个平台方法不一样，但都有实现方式）
+    uart_flush_input(UART_NUM_1);
+
     // 接收FPM383响应的数据
     uart_read_bytes(UART_NUM_1, rx_buffers, len, timeout);
 
-    // 判断接收到的数据是否正确
-    uint8_t verifyByte1 = 0XEF;
-    uint8_t verifyByte2 = 0X01;
-    uint8_t offset = 0; // 偏移量
+    // 打印接收到的命令
     for (uint8_t i = 0; i < len; i++)
     {
-        if ((rx_buffers[i] == verifyByte1) && (rx_buffers[i + 1] == verifyByte2))
-        {
-            offset = i;
-            break; // 找到正确的数据,跳出循环
-        }
-    }
-    // 将数据偏移到正确的位置
-    for (uint8_t i = 0; i < len; i++)
-    {
-        rx_buffers[i] = rx_buffers[i + offset];
         printf("%#02X ", rx_buffers[i]);
     }
     printf("\n");
