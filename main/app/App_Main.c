@@ -15,6 +15,9 @@ char second_buffers[BUFFER_SIZE];
 // 任务2句柄
 extern TaskHandle_t task2;
 
+// 标记:判断用户手指是否放到FPM383上面
+extern uint8_t fpm383_flag;
+
 /******************************************************************************************/
 
 // 清空缓冲区
@@ -162,9 +165,8 @@ void App_Main_Handler(char * user_inputData)
             // 验证通过
             if (err == STATE_OK)
             {
-                // 发送通知
-                xTaskNotify(task2, 1, eSetValueWithOverwrite);  // eSetValueWithOverwrite: 直接覆盖写入新值
-                // 通知值为1，表示添加指纹
+                // 发送通知   eSetValueWithOverwrite: 直接覆盖写入新值
+                xTaskNotify(task2, 1, eSetValueWithOverwrite);  // 通知值为1，表示添加指纹
             }
             else
             {
@@ -180,8 +182,7 @@ void App_Main_Handler(char * user_inputData)
             if (err == STATE_OK)
             {
                 // 发送通知
-                xTaskNotify(task2, 2, eSetValueWithOverwrite);
-                // 通知值为2，表示删除指纹
+                xTaskNotify(task2, 2, eSetValueWithOverwrite); // 通知值为2，表示删除指纹
             }
             else
             {
@@ -211,8 +212,117 @@ void App_Main_Handler_FingerPrint(void)
 
     //接收通知
     //收到数据:清除数据实际,收之前、之后都清！
-    xTaskNotifyWait(UINT32_MAX,UINT32_MAX,&val,0);
-    MY_LOGE("收到通知:%ld", val);
+    xTaskNotifyWait(UINT32_MAX, UINT32_MAX, &val, 0);
+    
+
+    if (val != 0)
+    {
+        MY_LOGE("收到通知:%ld", val);
+
+        // 关闭FPM383外部中断:放置添加、删除指纹,手指放上来,修改fpm383_flag标志位!!!!!
+        gpio_intr_disable(FPM383_OUT);
+        
+        if (val == 1) // 添加指纹
+        {
+            // 语音提示
+            sayWithoutInt();
+            sayPlaceFinger(); // 请放置手指
+            // 语音提示出来以后,稍微给用户留一些时间,让用户把指纹方法FPM383上面
+            vTaskDelay(2000);
+            // 添加指纹
+            // 获取FPM383指纹库当中还未注册指纹的最小ID编码
+            uint8_t register_min_id = Int_FPM383_GetMinID();
+            MY_LOGE("register_min_id: %d", register_min_id);
+            // 添加指纹
+            STATE_T err = Int_FPM383_AddUserFingerprint(register_min_id);
+            if (err == STATE_OK)
+            {
+                sayWithoutInt();
+                sayAddUserFingerprint(); // 添加用户指纹
+                sayWithoutInt();
+                sayAddSucc(); // 添加成功
+            }
+            else
+            {
+                sayWithoutInt();
+                sayAddUserFingerprint(); // 添加用户指纹
+                sayWithoutInt();
+                sayAddFail(); // 添加失败
+            }
+            // 正常来说:FPM383注册指纹完成,应该进入低功耗修改,Int_FPM383_Sleep,这个命令有问题!!!!!!!!单片机软件重启!!!!!!!
+            // esp_restart();
+            Int_FPM383_Sleep();
+        }
+        else if (val == 2) // 删除指纹
+        {
+            // 语音提示
+            sayWithoutInt();
+            sayPlaceFinger(); // 请放置手指
+            // 语音提示出来以后,稍微给用户留一些时间,让用户把指纹方法FPM383上面
+            vTaskDelay(2000);
+
+            // 获取指纹的ID,注册过指纹响应获取ID【0-99】,未注册-1
+            uint8_t del_id = 0;
+            if (Int_FPM383_VerifyFingerprint(&del_id) == STATE_OK)
+            {
+                MY_LOGE("del_id:%d", del_id);
+                sayWithoutInt();
+                sayFingerprintVerifySucc(); // 指纹验证成功
+            }
+            else
+            {
+                sayWithoutInt();
+                sayFingerprintVerifyFail(); // 指纹验证失败
+                // 进入低功耗
+                // esp_restart();
+                Int_FPM383_Sleep();
+                return;
+            }
+            
+            // 删除指纹
+            STATE_T err1 = Int_FPM383_DeleteUserFingerprint(del_id);
+            if (err1 == STATE_OK)
+            {
+                sayWithoutInt();
+                sayDelUserFingerprint(); // 删除用户指纹
+                sayWithoutInt();
+                sayDelSucc(); // 删除成功
+            }
+            else
+            {
+                sayWithoutInt();
+                sayDelUserFingerprint(); // 删除用户指纹
+                sayWithoutInt();
+                sayDelFail(); // 删除失败
+            }
+
+            // 进入低功耗
+            // esp_restart();
+            Int_FPM383_Sleep();
+        }
+    }
+    else
+    {
+        // 验证指纹开门
+        if (fpm383_flag)
+        {
+            fpm383_flag = 0;
+
+            // 验证指纹,判断在指纹库中是否存在
+            STATE_T err2 = Int_FPM383_VerifyFingerprint(NULL);
+            if (err2 == STATE_OK)
+            {
+                sayWithoutInt();
+                sayFingerprintVerifySucc(); // 指纹验证成功
+                // 开门
+                Int_BDR6120_Open();
+            }
+
+            // 进入休眠状态
+            // esp_restart();
+            Int_FPM383_Sleep();
+        }
+    }
 }
    
 /******************************************************************************************/

@@ -23,37 +23,11 @@ void app_main(void)
    // 1.应用初始化
     App_Main_Init();
 
-    /* // 2.创建一个任务,用于获取用户输入内容(持续判断)
+    // 2.创建一个任务,用于获取用户输入内容(持续判断)
     xTaskCreate(task_CallBack, "task_CallBack", 2048, NULL, 10, &task1);
 
     // 3.创建一个任务,处理指纹相关业务
-    xTaskCreate(task_Fingerprint, "task_Fingerprint", 2048, NULL, 10, &task2); */
-
-
-    vTaskDelay(3000 / portTICK_PERIOD_MS);
-
-    uint8_t id = Int_FPM383_GetMinID();
-    printf("获取指纹库中还未注册ID的最小值 = %d\n", id);
-
-    if (Int_FPM383_AddUserFingerprint(id) == STATE_OK)
-    {
-        printf("注册指纹成功\n");
-    }
-    else
-    {
-        printf("注册指纹失败\n");
-    }
-
-    vTaskDelay(3000 / portTICK_PERIOD_MS);
-
-    if (Int_FPM383_VerifyFingerprint(&id) == STATE_OK)
-    {
-        printf("验证指纹成功: %d\n", id);
-    }
-    else
-    {
-        printf("验证指纹失败\n");
-    }
+    xTaskCreate(task_Fingerprint, "task_Fingerprint", 2048, NULL, 10, &task2);
 }
 
 

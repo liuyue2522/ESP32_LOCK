@@ -81,7 +81,7 @@ void Int_FPM383_Init(void)
 
     // 4.添加延迟
     /* 复位启动时间为100ms左右，建议延时150ms */
-    vTaskDelay(150);
+    vTaskDelay(150 / portTICK_PERIOD_MS);
 
 
     // 5.进入休眠状态
@@ -124,10 +124,10 @@ void Int_FPM383_SerialNumber(void)
     }
 }
 
-// 3.FPM383进入休眠模式->低功耗
+// 3.FPM383进入休眠模式->低功耗    这个模块休眠功能异常，不适应休眠功能
 void Int_FPM383_Sleep(void)
 {
-    // 1.准备休眠命令
+    /* // 1.准备休眠命令
     uint8_t cmd[12] = {
         0xEF, 0x01,             // 包头
         0xFF, 0xFF, 0xFF, 0xFF, // 设备地址
@@ -145,11 +145,22 @@ void Int_FPM383_Sleep(void)
         // 接收应答数据
         Int_FPM383_RecvData(12, 2000);
         vTaskDelay(100 / portTICK_PERIOD_MS);
-    } while (rx_buffers[9] != 0x00);
+    } while (rx_buffers[9] != 0x00); */
+
+    // 先关闭外部中断，因为指纹模块复位后 TOUCH-OUT 会产生上升沿导致主控中断，所以这里先屏蔽指纹模块复位产生的上升沿。
+    gpio_intr_disable(FPM383_OUT);
+
+    // 拉高电平，指纹模块断电进入休眠状态
+    gpio_set_level(FPM383_EN, 1);
+    vTaskDelay(50 / portTICK_PERIOD_MS);
+    // 拉低电平，指纹模块上电
+    gpio_set_level(FPM383_EN, 0);
+    vTaskDelay(150 / portTICK_PERIOD_MS);
+
     // 进入休眠状态
     MY_LOGE("进入休眠状态");
     //开启外部中断
-    gpio_intr_enable(FPM383_OUT);
+    gpio_intr_enable(FPM383_OUT); // 这个模块的 TOUCH-OUT 感觉一直在变化，屏蔽无效。
 }
 
 // 4.获取指纹库中还未注册ID的最小值：    读索引表PS_ReadIndexTable
@@ -248,6 +259,8 @@ STATE_T Int_FPM383_AddUserFingerprint(uint8_t id)
             return STATE_FAIL;
         }
 
+        vTaskDelay(100 / portTICK_PERIOD_MS);
+
     } while (rx_buffers[10] != 0x06); // 0x06:表示注册指纹成功,如果接收到的数据不是0x06,则继续接收
 
     // 注册成功
@@ -274,6 +287,7 @@ void Int_FPM383_Cancel(void)
     {
         Int_FPM383_SendCMD(cmd, sizeof(cmd));
         Int_FPM383_RecvData(12, 2000);
+        vTaskDelay(100 / portTICK_PERIOD_MS);
     } while (rx_buffers[9] != 0x00); // 确认码=00H 表示取消设置成功
     MY_LOGE("取消注册指纹模版成功");
 }
