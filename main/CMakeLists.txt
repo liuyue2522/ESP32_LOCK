@@ -9,6 +9,10 @@ idf_component_register(
         "./dri/dri_NVS.c"
         "./app/App_Main.c"
         "./int/Int_FPM383.c"
+        "./dri/Dri_BLE.c"
+        "./dri/Dri_wifi_sta.c"
+        "./app/App_BLE.c"
+        "./app/App_OTA.c"
     INCLUDE_DIRS
     "."
     "./com"

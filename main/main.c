@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include "Com_Debug.h"
 #include "App_Main.h"
+#include "App_BLE.h"
+#include "App_OTA.h"
 
 
 // 1、任务1的控制块
@@ -20,6 +22,12 @@ void task_Fingerprint(void *pvParameters);
 
 void app_main(void)
 {
+    // OTA在线升级
+    App_OTA_Init();
+
+    // 初始化蓝牙
+    App_BLE_Init();
+
    // 1.应用初始化
     App_Main_Init();
 
