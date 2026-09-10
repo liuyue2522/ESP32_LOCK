@@ -10,7 +10,7 @@
 
 //从机地址
 #define SLAVE_ADDR 0x42
-// I2C通信速度
+// I2C通信速度:  400KHz
 #define I2C_MASTER_FREQ_HZ 400000
 /*!< I2C master doesn't need buffer */
 #define I2C_MASTER_TX_BUF_DISABLE 0
