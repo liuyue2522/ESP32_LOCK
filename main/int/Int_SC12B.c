@@ -53,7 +53,7 @@ void Int_SC12B_Init(void)
     gpio_isr_handler_add(SC_INT, key_callBack, (void *)SC_INT);
 
 
-    // 3.尽可能通信延迟300ms
+    // 3.上电复位后，芯片需要300ms进行初始化，计算感应管脚的环境电容，然后才能正常工作。
     vTaskDelay(300);
 
     // 4.修改按键灵敏度,稍微降低一些
