@@ -24,7 +24,6 @@
 #include "Com_Config.h"
 #include "string.h"
 #include "Com_Debug.h"
-#include "esp_task.h"
 
 
 #define BUFFER_SIZE 20
